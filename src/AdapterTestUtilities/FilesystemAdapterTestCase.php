@@ -669,6 +669,42 @@ abstract class FilesystemAdapterTestCase extends TestCase
 
     /**
      * @test
+     * @fixme Move to FilesystemAdapterTestCase once all adapters pass
+     */
+    public function moving_a_file_and_overwriting(): void
+    {
+        $this->runScenario(function() {
+            $adapter = $this->adapter();
+            $adapter->write(
+                'source.txt',
+                'contents to be moved',
+                new Config([Config::OPTION_VISIBILITY => Visibility::PUBLIC])
+            );
+            $adapter->write(
+                'destination.txt',
+                'contents to be overwritten',
+                new Config([Config::OPTION_VISIBILITY => Visibility::PUBLIC])
+            );
+            $adapter->move('source.txt', 'destination.txt', new Config());
+            $this->assertFalse(
+                $adapter->fileExists('source.txt'),
+                'After moving a file should no longer exist in the original location.'
+            );
+            $this->assertTrue(
+                $adapter->fileExists('destination.txt'),
+                'After moving, a file should be present at the new location.'
+            );
+            try {
+                $this->assertEquals(Visibility::PUBLIC, $adapter->visibility('destination.txt')->visibility());
+            } catch (UnableToRetrieveMetadata) {
+                // ignore adapters that don't support visibility
+            }
+            $this->assertEquals('contents to be moved', $adapter->read('destination.txt'));
+        });
+    }
+
+    /**
+     * @test
      */
     public function trying_to_delete_a_non_existing_file(): void
     {
